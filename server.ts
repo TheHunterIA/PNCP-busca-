@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { MOCK_LICITACOES, filtrarMockData } from "./api/mockData";
+import { MOCK_LICITACOES, filtrarMockData } from "./api/licitacoes";
 
 async function startServer() {
   const app = express();
