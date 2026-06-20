@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import { createServer as createViteServer } from "vite";
 import { buscarLicitacoesDoFirestore } from "./api/licitacoes";
 import { executarSincronizacao, obterStatusSincronismo, obterTotalRegistrosFirestore } from "./lib/sync";
 import { db } from "./lib/firebase";
@@ -22,85 +23,62 @@ async function startServer() {
     next();
   });
 
-  // 1. API: Leitura rápida diretamente do Firebase Firestore
+  // API Routes
   app.get("/api/licitacoes", async (req, res) => {
     try {
       const {
+        q,
         termo,
-        dataInicial,
-        dataFinal,
         uf,
         modalidade,
-        esfera,
-        situacao,
         pagina = "1",
-        tamanho = "6"
+        limite = "10"
       } = req.query;
 
-      const pageNum = parseInt(pagina as string, 10) || 1;
-      const pageSize = parseInt(tamanho as string, 10) || 6;
-
-      const result = await buscarLicitacoesDoFirestore(pageNum, pageSize, {
-        termo: termo as string,
+      const results = await buscarLicitacoesDoFirestore({
+        q: (q as string) || (termo as string),
         uf: uf as string,
         modalidade: modalidade as string,
-        esfera: esfera as string,
-        situacao: situacao as string
+        pagina: parseInt(pagina as string, 10) || 1,
+        limite: parseInt(limite as string, 10) || 10
       });
 
-      return res.json(result);
+      return res.json(results);
     } catch (error: any) {
-      console.error("[Server Error] Falha de leitora em /api/licitacoes:", error);
-      res.status(500).json({
-        success: false,
-        message: "Ocorreu um erro ao consultar o banco de dados Firebase Firestore.",
-        error: error.message
-      });
+      console.error("[Server Error] Falha de leitura em /api/licitacoes:", error);
+      res.status(500).json({ error: error.message });
     }
   });
 
-  // 2. API: Robô de Ingestão e Sincronização incremental do PNCP (Suporta GET e POST para Cron Vercel)
+  app.get("/api/licitacoes/stats", async (req, res) => {
+    try {
+      const stats = await obterStatusSincronismo();
+      const total = await obterTotalRegistrosFirestore();
+      return res.json({ ...stats, totalRegistros: total });
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
+    }
+  });
+
   app.all("/api/sync", async (req, res) => {
     try {
-      let queryDataInicial = "20250101";
-      let queryDataFinal = "20251231";
+      let queryDataInicial: string | undefined;
+      let queryDataFinal: string | undefined;
       let limitPages = 3;
 
       if (req.method === "POST") {
         const { dataInicial, dataFinal, paginasMax } = req.body;
-        queryDataInicial = dataInicial || "20250101";
-        queryDataFinal = dataFinal || "20251231";
+        queryDataInicial = dataInicial;
+        queryDataFinal = dataFinal;
         limitPages = parseInt(String(paginasMax), 10) || 3;
       } else {
-        // GET request (e.g. from Vercel Cron)
         const { dataInicial, dataFinal, paginasMax } = req.query;
-        
-        if (dataInicial || dataFinal) {
-          queryDataInicial = (dataInicial as string) || "20250101";
-          queryDataFinal = (dataFinal as string) || "20251231";
-          limitPages = parseInt(String(paginasMax), 10) || 3;
-        } else {
-          // Default rolling window: from 15 days ago to today (perfect for continuous automation)
-          const today = new Date();
-          const fifteenDaysAgo = new Date();
-          fifteenDaysAgo.setDate(today.getDate() - 15);
-          
-          const formatDate = (d: Date) => {
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, "0");
-            const day = String(d.getDate()).padStart(2, "0");
-            return `${year}${month}${day}`;
-          };
-          
-          queryDataInicial = formatDate(fifteenDaysAgo);
-          queryDataFinal = formatDate(today);
-          limitPages = 4; // Fetch up to 4 pages (200 records) automatically
-        }
+        queryDataInicial = dataInicial as string;
+        queryDataFinal = dataFinal as string;
+        limitPages = parseInt(String(paginasMax), 10) || 3;
       }
 
-      console.log(`[Sync Trigger] Iniciando sincronismo via ${req.method}. Período selecionado: ${queryDataInicial} a ${queryDataFinal} (Max Pág: ${limitPages})`);
-      
-      // Chamando a nova versão do sync que lida com checkpoints se os params forem omitidos
+      console.log(`[Sync Trigger] Iniciando sincronismo via ${req.method}. Checkpoint ativo se datas omitidas.`);
       const stats = await executarSincronizacao(queryDataInicial, queryDataFinal, limitPages);
 
       return res.json({
@@ -117,7 +95,6 @@ async function startServer() {
     }
   });
 
-  // 3. API: Status do Robô e número total de registros salvos no Firestore
   app.get("/api/sync/status", async (req, res) => {
     try {
       const stats = await obterStatusSincronismo();
@@ -138,12 +115,9 @@ async function startServer() {
     }
   });
 
-  // 4. API: Limpeza de cache no Firestore para testes limpos e incríveis pelo usuário
   app.post("/api/clear", async (req, res) => {
     try {
-      console.log("[Wipe Engine] Iniciando limpeza total da base de licitações para teste do usuário...");
-      
-      // Apaga os registros de licitações
+      console.log("[Wipe Engine] Iniciando limpeza total da base de licitações...");
       const colRef = collection(db, "licitacoes");
       const snap = await getDocs(colRef);
       let count = 0;
@@ -153,16 +127,14 @@ async function startServer() {
         count++;
       }
 
-      // Apaga registros de status
       try {
         await deleteDoc(doc(db, "config", "sync_stats"));
       } catch (e) {}
 
-      console.log(`[Wipe Engine] Sucesso: ${count} registros limpos do Firebase.`);
-      
+      console.log(`[Wipe Engine] Sucesso: ${count} registros limpos.`);
       return res.json({
         success: true,
-        message: `Wipe completo! ${count} registros removidos com sucesso. O Firestore está zerado para novos testes de ingestão incremental!`,
+        message: `Wipe completo! ${count} registros removidos.`,
         recordsCleaned: count
       });
     } catch (error: any) {
@@ -175,43 +147,46 @@ async function startServer() {
     }
   });
 
-  // Health Check / Root route
-  app.get("/", (req, res) => {
-    res.json({ 
-      status: "online", 
-      message: "PNCP Modern API Server (Firebase Backend Only)",
-      endpoints: [
-        "/api/licitacoes",
-        "/api/sync",
-        "/api/sync/status"
-      ]
+  // Frontend Serving Logic
+  if (process.env.NODE_ENV !== "production") {
+    // Development: Vite middleware
+    console.log("[Server] Integrando middleware do Vite para desenvolvimento...");
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
     });
-  });
+    app.use(vite.middlewares);
+  } else {
+    // Production: Static serving
+    const clientPath = path.join(process.cwd(), "dist", "client");
+    console.log(`[Server] Servindo frontend estático de: ${clientPath}`);
+    app.use(express.static(clientPath));
+    app.get("*", (req, res) => {
+      if (req.path.startsWith("/api/")) return res.status(404).end();
+      res.sendFile(path.join(clientPath, "index.html"));
+    });
+  }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[PNCP Modern Server] API Backend escutando perfeitamente na porta ${PORT}`);
+    console.log(`[PNCP Modern Server] Backend rodando na porta ${PORT}`);
     
-    // Disparo Automático: Carga Inicial de Dados no Boot
-    // Isso garante que o usuário tenha dados assim que o servidor subir pela primeira vez
+    // Boot Sync Trigger
     const triggerInitialSync = async () => {
-      console.log("[Boot Trigger] Iniciando carga de dados automática de inicialização...");
+      console.log("[Boot Trigger] Verificando carga inicial...");
       try {
-        const today = new Date();
-        const startOfYear = "20250101"; // Início de 2025 conforme regra
-        const formatDate = (d: Date) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
-        const endDate = formatDate(today);
+        const stats = await obterStatusSincronismo();
+        // Só faz sync inicial se nunca foi feito ou se o banco parece vazio
+        if (!stats.lastSyncTime) {
+          const startOfYear = "20250101";
+          const today = new Date();
+          const formatDate = (d: Date) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+          const endDate = formatDate(today);
 
-        // Executa sync em background para não travar o boot do servidor
-        executarSincronizacao(startOfYear, endDate, 2)
-          .then(stats => {
-            console.log(`[Boot Trigger] Sincronismo inicial concluído. Salvos: ${stats.savedCount} registros.`);
-          })
-          .catch(err => {
-            console.error("[Boot Trigger] Falha na carga automática de boot:", err);
-          });
-      } catch (e) {
-        console.error("[Boot Trigger] Erro ao preparar carga inicial:", e);
-      }
+          executarSincronizacao(startOfYear, endDate, 1)
+            .then(s => console.log(`[Boot Trigger] Sync inicial concluído: ${s.savedCount} regs.`))
+            .catch(e => console.error("[Boot Trigger] Erro no sync inicial:", e));
+        }
+      } catch (e) {}
     };
 
     triggerInitialSync();
@@ -219,3 +194,4 @@ async function startServer() {
 }
 
 startServer();
+

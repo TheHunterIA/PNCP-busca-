@@ -6,6 +6,7 @@ import { LicitacaoPNCP } from "./types";
 export interface SyncStats {
   lastSyncTime: string;
   lastSyncPeriod: string;
+  lastSyncDateInternal?: string; // Formato YYYYMMDD
   fetchedCount: number;
   savedCount: number;
   filteredOutCount: number;
@@ -39,26 +40,31 @@ export async function executarSincronizacao(
   let dataInicial = dataInicialParam;
   let dataFinal = dataFinalParam;
 
-  if (!dataInicial || !dataFinal) {
-    const status = await obterStatusSincronismo();
-    const hoje = new Date();
-    
-    // Se não informou data final, usa hoje
-    if (!dataFinal) {
-      dataFinal = hoje.toISOString().split("T")[0].replace(/-/g, "");
-    }
+  const statusDoc = await getDoc(doc(db, "config", "sync_stats"));
+  const status = statusDoc.exists() ? statusDoc.data() as SyncStats : null;
 
-    // Se não informou data inicial, tenta pegar do último sync realizado
+  if (!dataInicial || !dataFinal) {
+    const hoje = new Date();
+    const hojeFormatado = hoje.toISOString().split("T")[0].replace(/-/g, "");
+    
+    if (!dataFinal) dataFinal = hojeFormatado;
+
     if (!dataInicial) {
-      if (status && status.success) {
-         // Pega a data de término do último sync e usa como início do novo (incremental)
-         // Mas para segurança, vamos recuar 1 dia para evitar buracos por horários
-         dataInicial = dataFinal; // Simplificando: se não informou, busca o dia atual
+      if (status && status.success && status.lastSyncDateInternal) {
+         // Retoma do dia seguinte ao último sucesso
+         const lastDate = new Date(status.lastSyncDateInternal.substring(0,4) + "-" + status.lastSyncDateInternal.substring(4,6) + "-" + status.lastSyncDateInternal.substring(6,8));
+         lastDate.setDate(lastDate.getDate() + 1);
+         dataInicial = lastDate.toISOString().split("T")[0].replace(/-/g, "");
+         
+         // Se a data calculada for no futuro em relação ao hoje, trava no hoje
+         if (parseInt(dataInicial) > parseInt(dataFinal)) {
+            dataInicial = dataFinal;
+         }
       } else {
-         // Default caso nunca tenha rodado: últimos 7 dias
-         const seteDiasAtras = new Date();
-         seteDiasAtras.setDate(hoje.getDate() - 7);
-         dataInicial = seteDiasAtras.toISOString().split("T")[0].replace(/-/g, "");
+         // Default: Volta 3 dias para não sobrecarregar no primeiro sync
+         const start = new Date();
+         start.setDate(hoje.getDate() - 3);
+         dataInicial = start.toISOString().split("T")[0].replace(/-/g, "");
       }
     }
   }
@@ -73,52 +79,44 @@ export async function executarSincronizacao(
   const modalidades = [4, 5, 6, 7, 10];
   
   try {
-    for (const mod of modalidades) {
-      log(`Buscando modalidade ${mod}...`);
+    // Processamento por lotes (Chunks) para controlar concorrência (max 3 simultâneos)
+    const modalidadesChunks = [modalidades.slice(0, 2), modalidades.slice(2, 4), modalidades.slice(4)];
+
+    for (const chunk of modalidadesChunks) {
+      log(`Iniciando lote de modalidades: ${chunk.join(", ")}`);
       
-      for (let p = 1; p <= paginasMax; p++) {
-        log(`Página ${p}/${paginasMax} mod ${mod}...`);
-        
-        // 2. Chamada com filtro de Esfera 'F' (Federal) direto na API
-        const res = await buscarLicitacoesPNCP(dataInicial, dataFinal, p, mod, 50, "F");
-        
-        if (!res.records || res.records.length === 0) {
-          log(`Página ${p} modalidade ${mod} vazia.`);
-          break;
-        }
+      await Promise.all(chunk.map(async (mod) => {
+        for (let p = 1; p <= paginasMax; p++) {
+          log(`Pág ${p} mod ${mod}...`);
+          
+          const res = await buscarLicitacoesPNCP(dataInicial!, dataFinal!, p, mod, 50, "F");
+          
+          if (!res.records || res.records.length === 0) break;
 
-        const batchSize = res.records.length;
-        totalEstudosBuscados += batchSize;
+          totalEstudosBuscados += res.records.length;
 
-        // 3. Filtragem Adicional Client-side (Data 2025+)
-        const recordsTratados = res.records.filter((item) => {
-          const yearOfPub = parseInt(item.dataPublicacao.substring(0, 4)) || item.anoLicitacao;
-          const matches2025Plus = yearOfPub >= 2025;
-          const matchesFederal = item.orgaoEntidade.esfera === "Federal";
+          const recordsTratados = res.records.filter((item) => {
+            const yearOfPub = parseInt(item.dataPublicacao.substring(0, 4)) || item.anoLicitacao;
+            const matches2025Plus = yearOfPub >= 2025;
+            const isFederal = item.orgaoEntidade.esfera === "Federal";
 
-          if (matches2025Plus && matchesFederal) {
-            return true;
-          } else {
+            if (matches2025Plus && isFederal) return true;
             totalFiltradosFora++;
             return false;
-          }
-        });
+          });
 
-        if (recordsTratados.length > 0) {
-          // Gravando no Firestore (serial para evitar overload)
-          for (const item of recordsTratados) {
-            const docRef = doc(db, "licitacoes", item.numeroControlePNCP);
-            await setDoc(docRef, item, { merge: true });
-            totalSalvosNoBanco++;
+          if (recordsTratados.length > 0) {
+            for (const item of recordsTratados) {
+              await setDoc(doc(db, "licitacoes", item.numeroControlePNCP), item, { merge: true });
+              totalSalvosNoBanco++;
+            }
+            log(`+${recordsTratados.length} licitações (Mod ${mod})`);
           }
-          log(`+${recordsTratados.length} licitações salvas (Modalidade ${mod}).`);
+
+          await delay(800); // Delay curto para evitar 429
+          if (p >= res.totalPaginas) break;
         }
-
-        // 4. Delay entre requests (respeito ao Rate Limit)
-        await delay(1000); 
-
-        if (p >= res.totalPaginas) break;
-      }
+      }));
     }
 
     log(`Workflow concluído. ${totalSalvosNoBanco} documentos sincronizados.`);
@@ -126,6 +124,7 @@ export async function executarSincronizacao(
     const stats: SyncStats = {
       lastSyncTime: new Date().toISOString(),
       lastSyncPeriod: `${dataInicial} até ${dataFinal}`,
+      lastSyncDateInternal: dataFinal, // Guardamos a data final para o próximo checkpoint
       fetchedCount: totalEstudosBuscados,
       savedCount: totalSalvosNoBanco,
       filteredOutCount: totalFiltradosFora,
