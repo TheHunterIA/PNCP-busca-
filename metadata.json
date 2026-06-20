@@ -1,0 +1,6 @@
+{
+  "name": "Consulta de Licitações PNCP",
+  "description": "Painel completo de consulta e busca em tempo real de licitações do Portal Nacional de Contratações Públicas (PNCP).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
