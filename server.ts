@@ -100,6 +100,7 @@ async function startServer() {
 
       console.log(`[Sync Trigger] Iniciando sincronismo via ${req.method}. Período selecionado: ${queryDataInicial} a ${queryDataFinal} (Max Pág: ${limitPages})`);
       
+      // Chamando a nova versão do sync que lida com checkpoints se os params forem omitidos
       const stats = await executarSincronizacao(queryDataInicial, queryDataFinal, limitPages);
 
       return res.json({

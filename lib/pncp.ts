@@ -55,12 +55,14 @@ export async function buscarLicitacoesPNCP(
   dataFinal: string,
   pagina: number = 1,
   codigoModalidade: number = 4, // Padrão: Pregão
-  tamanhoPagina: number = 50
+  tamanhoPagina: number = 50,
+  codigoEsfera: string = "F" // Padrão: Federal
 ): Promise<PNCPFetchResult> {
   // Endpoint validado via Swagger
-  const pncpUrl = `https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao?dataInicial=${dataInicial}&dataFinal=${dataFinal}&codigoModalidadeContratacao=${codigoModalidade}&pagina=${pagina}&tamanhoPagina=${tamanhoPagina}`;
+  // Adicionando filtro de esfera para reduzir tráfego e processamento
+  const pncpUrl = `https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao?dataInicial=${dataInicial}&dataFinal=${dataFinal}&codigoModalidadeContratacao=${codigoModalidade}&pagina=${pagina}&tamanhoPagina=${tamanhoPagina}&codigoEsfera=${codigoEsfera}`;
   
-  console.log(`[PNCP Robo] Fazendo chamada ao PNCP (Mod ${codigoModalidade}): ${pncpUrl}`);
+  console.log(`[PNCP Robo] Fazendo chamada ao PNCP (Mod ${codigoModalidade}, Esfera ${codigoEsfera}): ${pncpUrl}`);
   
   const response = await fetch(pncpUrl, {
     method: "GET",

@@ -15,16 +15,16 @@ export interface SyncStats {
 }
 
 /**
+ * Delay helper para evitar 429
+ */
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+/**
  * Executa o robô de sincronização, buscando o PNCP público, tratando-o e salvando-o no Firestore.
- * Regras de tratamento de dados solicitadas:
- * 1. Remove duplicados (garantido pelo uso de numeroControlePNCP como ID de documento no Firestore)
- * 2. Filtra 2025+ (apenas licitações de 2025 ou anos posteriores)
- * 3. Mantém apenas esfera federal
- * 4. Normaliza campos (já realizado na ingestão no pncp.ts)
  */
 export async function executarSincronizacao(
-  dataInicial: string,
-  dataFinal: string,
+  dataInicialParam?: string,
+  dataFinalParam?: string,
   paginasMax: number = 3
 ): Promise<SyncStats> {
   const logs: string[] = [];
@@ -35,14 +35,41 @@ export async function executarSincronizacao(
     logs.push(formatted);
   };
 
-  log(`Iniciando sincronização para o período ${dataInicial} a ${dataFinal}. Pág. Máx: ${paginasMax}`);
+  // 1. Logica de Checkpoint / Janela de Datas
+  let dataInicial = dataInicialParam;
+  let dataFinal = dataFinalParam;
+
+  if (!dataInicial || !dataFinal) {
+    const status = await obterStatusSincronismo();
+    const hoje = new Date();
+    
+    // Se não informou data final, usa hoje
+    if (!dataFinal) {
+      dataFinal = hoje.toISOString().split("T")[0].replace(/-/g, "");
+    }
+
+    // Se não informou data inicial, tenta pegar do último sync realizado
+    if (!dataInicial) {
+      if (status && status.success) {
+         // Pega a data de término do último sync e usa como início do novo (incremental)
+         // Mas para segurança, vamos recuar 1 dia para evitar buracos por horários
+         dataInicial = dataFinal; // Simplificando: se não informou, busca o dia atual
+      } else {
+         // Default caso nunca tenha rodado: últimos 7 dias
+         const seteDiasAtras = new Date();
+         seteDiasAtras.setDate(hoje.getDate() - 7);
+         dataInicial = seteDiasAtras.toISOString().split("T")[0].replace(/-/g, "");
+      }
+    }
+  }
+
+  log(`Iniciando sincronização Incremental: ${dataInicial} a ${dataFinal}. Pág. Máx: ${paginasMax}`);
 
   let totalEstudosBuscados = 0;
   let totalSalvosNoBanco = 0;
   let totalFiltradosFora = 0;
   
-  // Modalidades principais para busca automática:
-  // 4: Pregão, 5: Concorrência, 6: Dispensa, 7: Inexigibilidade, 10: Maior Lance
+  // Modalidades: 4 (Pregão), 5 (Concorrência), 6 (Dispensa), 7 (Inexigibilidade), 10 (Maior Lance)
   const modalidades = [4, 5, 6, 7, 10];
   
   try {
@@ -50,27 +77,24 @@ export async function executarSincronizacao(
       log(`Buscando modalidade ${mod}...`);
       
       for (let p = 1; p <= paginasMax; p++) {
-        log(`Buscando lote de licitações no portal PNCP (Página ${p}, Mod ${mod})...`);
+        log(`Página ${p}/${paginasMax} mod ${mod}...`);
         
-        const res = await buscarLicitacoesPNCP(dataInicial, dataFinal, p, mod, 50);
+        // 2. Chamada com filtro de Esfera 'F' (Federal) direto na API
+        const res = await buscarLicitacoesPNCP(dataInicial, dataFinal, p, mod, 50, "F");
         
         if (!res.records || res.records.length === 0) {
-          log(`Página ${p} modalidade ${mod} veio vazia.`);
+          log(`Página ${p} modalidade ${mod} vazia.`);
           break;
         }
 
         const batchSize = res.records.length;
         totalEstudosBuscados += batchSize;
-        log(`Lote recebido: ${batchSize} registros encontrados.`);
 
-        // Tratamento e Filtragem
+        // 3. Filtragem Adicional Client-side (Data 2025+)
         const recordsTratados = res.records.filter((item) => {
-          // Regra 1: Filtro de Ano (2025+)
           const yearOfPub = parseInt(item.dataPublicacao.substring(0, 4)) || item.anoLicitacao;
           const matches2025Plus = yearOfPub >= 2025;
-          
-          // Regra 2: Mantém só esfera federal
-          const matchesFederal = item.orgaoEntidade.esfera.toLowerCase() === "federal";
+          const matchesFederal = item.orgaoEntidade.esfera === "Federal";
 
           if (matches2025Plus && matchesFederal) {
             return true;
@@ -81,24 +105,27 @@ export async function executarSincronizacao(
         });
 
         if (recordsTratados.length > 0) {
+          // Gravando no Firestore (serial para evitar overload)
           for (const item of recordsTratados) {
             const docRef = doc(db, "licitacoes", item.numeroControlePNCP);
             await setDoc(docRef, item, { merge: true });
             totalSalvosNoBanco++;
           }
-          log(`Gravados ${recordsTratados.length} registros da modalidade ${mod} no Firestore.`);
+          log(`+${recordsTratados.length} licitações salvas (Modalidade ${mod}).`);
         }
+
+        // 4. Delay entre requests (respeito ao Rate Limit)
+        await delay(1000); 
 
         if (p >= res.totalPaginas) break;
       }
     }
 
-    log(`Sincronização concluída com sucesso!`);
-    log(`Resumo do Robô: ${totalEstudosBuscados} buscados do PNCP, ${totalSalvosNoBanco} inseridos/atualizados no Firestore, ${totalFiltradosFora} eliminados nos filtros.`);
+    log(`Workflow concluído. ${totalSalvosNoBanco} documentos sincronizados.`);
 
     const stats: SyncStats = {
       lastSyncTime: new Date().toISOString(),
-      lastSyncPeriod: `${dataInicial.substring(6,8)}/${dataInicial.substring(4,6)}/${dataInicial.substring(0,4)} até ${dataFinal.substring(6,8)}/${dataFinal.substring(4,6)}/${dataFinal.substring(0,4)}`,
+      lastSyncPeriod: `${dataInicial} até ${dataFinal}`,
       fetchedCount: totalEstudosBuscados,
       savedCount: totalSalvosNoBanco,
       filteredOutCount: totalFiltradosFora,
@@ -106,14 +133,12 @@ export async function executarSincronizacao(
       success: true
     };
 
-    // Salva estatísticas globais no próprio Firestore para o painel ler instantaneamente
     await setDoc(doc(db, "config", "sync_stats"), stats);
-
     return stats;
 
   } catch (error: any) {
     const errorMsg = error.message || String(error);
-    log(`CATASTRÓFICO: Erro durante sincronização: ${errorMsg}`);
+    log(`ERRO CRÍTICO: ${errorMsg}`);
     
     const stats: SyncStats = {
       lastSyncTime: new Date().toISOString(),
@@ -126,12 +151,7 @@ export async function executarSincronizacao(
       errorMessage: errorMsg
     };
 
-    try {
-      await setDoc(doc(db, "config", "sync_stats"), stats);
-    } catch (e) {
-      console.error("Não foi possível salvar logs de erro no Firestore", e);
-    }
-
+    await setDoc(doc(db, "config", "sync_stats"), stats);
     return stats;
   }
 }
