@@ -3,7 +3,7 @@ import { executarSincronizacao } from "../lib/sync";
 async function main() {
   console.log("--- Executando Sincronismo Manual para Teste ---");
   try {
-    const stats = await executarSincronizacao("20250601", "20250620", 1);
+    const stats = await executarSincronizacao("20250101", "20250105", 1);
     console.log("Sincronismo concluído:");
     console.log(JSON.stringify(stats, null, 2));
   } catch (error) {

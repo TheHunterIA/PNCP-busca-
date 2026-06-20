@@ -14,32 +14,35 @@ export function normalizarLicitacao(item: any): LicitacaoPNCP {
   
   // Normalização e limpeza de campo
   const esferaMapeada = (): string => {
-    const esf = String(orgao.esfera || "").toUpperCase();
+    const esf = String(orgao.esferaId || orgao.esfera || "").toUpperCase();
     if (esf === "F" || esf.includes("FEDER")) return "Federal";
     if (esf === "E" || esf.includes("ESTAD")) return "Estadual";
     if (esf === "M" || esf.includes("MUNIC")) return "Municipal";
-    return orgao.esfera || "Outra";
+    return orgao.esfera || orgao.esferaId || "Outra";
   };
 
+  const sanitizeId = (id: string): string => id.replace(/\//g, "-");
+  const objetoNormalizado = (item.objeto || item.objetoCompra || "Objeto não informado").trim();
+
   return {
-    numeroControlePNCP: item.numeroControlePNCP || `${orgao.cnpj || "000"}-${item.numeroLicitacao || "0"}-${item.anoLicitacao || "2025"}`,
-    numeroLicitacao: item.numeroLicitacao || "",
-    anoLicitacao: Number(item.anoLicitacao) || 2025,
-    objeto: (item.objeto || "Objeto não informado").trim(),
-    valorEstimado: Number(item.valorEstimado) || Number(item.valorTotalEstimado) || 0,
-    dataPublicacao: item.dataPublicacao || item.dataInclusao || new Date().toISOString(),
+    numeroControlePNCP: sanitizeId(item.numeroControlePNCP || `${orgao.cnpj || "000"}-${item.numeroLicitacao || item.numeroCompra || "0"}-${item.anoLicitacao || item.anoCompra || "2025"}`),
+    numeroLicitacao: item.numeroLicitacao || item.numeroCompra || "",
+    anoLicitacao: Number(item.anoLicitacao || item.anoCompra) || 2025,
+    objeto: objetoNormalizado,
+    valorEstimado: Number(item.valorEstimado || item.valorTotalEstimado || item.valorTotalHomologado) || 0,
+    dataPublicacao: item.dataPublicacao || item.dataPublicacaoPncp || item.dataInclusao || new Date().toISOString(),
     dataAberturaProposta: item.dataAberturaProposta || item.dataFimApresentacaoProposta || undefined,
-    situacaoLicitacao: item.situacaoLicitacao || "Publicada",
+    situacaoLicitacao: item.situacaoLicitacaoNome || item.situacaoLicitacao || item.situacaoCompraNome || "Publicada",
     modalidadeNome: item.modalidadeNome || "Licitação",
     modalidadeId: item.modalidadeId ? String(item.modalidadeId) : undefined,
     orgaoEntidade: {
       cnpj: orgao.cnpj || "00.000.000/0000-00",
       razaoSocial: (orgao.razaoSocial || "Órgão Não Identificado").trim(),
-      poder: orgao.poder || undefined,
+      poder: orgao.poderId || orgao.poder || undefined,
       esfera: esferaMapeada(),
-      uf: (orgao.uf || "DF").toUpperCase()
+      uf: (orgao.uf || orgao.ufSigla || "DF").toUpperCase()
     },
-    linkOriginal: item.linkOriginal || undefined
+    linkOriginal: item.linkOriginal || item.linkSistemaOrigem || undefined
   };
 }
 
