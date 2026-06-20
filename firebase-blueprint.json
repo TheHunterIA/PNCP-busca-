@@ -1,0 +1,51 @@
+{
+  "entities": {
+    "Licitacao": {
+      "title": "Licitação PNCP",
+      "description": "Dados de uma licitação capturada do PNCP",
+      "type": "object",
+      "properties": {
+        "numeroControlePNCP": { "type": "string" },
+        "numeroLicitacao": { "type": "string" },
+        "anoLicitacao": { "type": "integer" },
+        "objeto": { "type": "string" },
+        "valorEstimado": { "type": "number" },
+        "dataPublicacao": { "type": "string" },
+        "situacaoLicitacao": { "type": "string" },
+        "modalidadeNome": { "type": "string" },
+        "orgaoEntidade": {
+          "type": "object",
+          "properties": {
+            "cnpj": { "type": "string" },
+            "razaoSocial": { "type": "string" },
+            "esfera": { "type": "string" },
+            "uf": { "type": "string" }
+          }
+        }
+      }
+    },
+    "SyncStats": {
+      "title": "Estatísticas de Sincronismo",
+      "description": "Logs e contadores da última sincronização",
+      "type": "object",
+      "properties": {
+        "lastSyncTime": { "type": "string" },
+        "lastSyncPeriod": { "type": "string" },
+        "fetchedCount": { "type": "integer" },
+        "savedCount": { "type": "integer" },
+        "filteredOutCount": { "type": "integer" },
+        "success": { "type": "boolean" }
+      }
+    }
+  },
+  "firestore": {
+    "/licitacoes/{id}": {
+      "schema": "Licitacao",
+      "description": "Coleção principal de licitações"
+    },
+    "/config/sync_stats": {
+      "schema": "SyncStats",
+      "description": "Status do último sync"
+    }
+  }
+}

@@ -41,59 +41,55 @@ export async function executarSincronizacao(
   let totalSalvosNoBanco = 0;
   let totalFiltradosFora = 0;
   
+  // Modalidades principais para busca automática:
+  // 4: Pregão, 5: Concorrência, 6: Dispensa, 7: Inexigibilidade, 10: Maior Lance
+  const modalidades = [4, 5, 6, 7, 10];
+  
   try {
-    for (let p = 1; p <= paginasMax; p++) {
-      log(`Buscando lote de licitações no portal PNCP (Página ${p})...`);
+    for (const mod of modalidades) {
+      log(`Buscando modalidade ${mod}...`);
       
-      const res = await buscarLicitacoesPNCP(dataInicial, dataFinal, p, 50);
-      
-      if (!res.records || res.records.length === 0) {
-        log(`Página ${p} veio vazia. Encerrando busca por lote.`);
-        break;
-      }
-
-      const batchSize = res.records.length;
-      totalEstudosBuscados += batchSize;
-      log(`Lote recebido: ${batchSize} registros encontrados na página ${p}.`);
-
-      // Tratamento e Filtragem
-      log("Iniciando tratamento de dados (removendo duplicados, filtrando 2025+ e esfera Federal)...");
-
-      const recordsTratados = res.records.filter((item) => {
-        // Regra 1: Filtro de Ano (2025+)
-        // O ano de publicação ou anoLicitacao deve ser >= 2025
-        const matchesAno = item.anoLicitacao >= 2024; // Deixamos >= 2024 para ter mais dados, mas o usuário pediu 2025+. Permitimos ambos, mas vamos registrar a regra do usuário!
-        // De fato, vamos honrar o pedido do usuário: "filtra 2025+"
-        const yearOfPub = parseInt(item.dataPublicacao.substring(0, 4)) || item.anoLicitacao;
-        const matches2025Plus = yearOfPub >= 2025;
+      for (let p = 1; p <= paginasMax; p++) {
+        log(`Buscando lote de licitações no portal PNCP (Página ${p}, Mod ${mod})...`);
         
-        // Regra 2: Mantém só esfera federal
-        const matchesFederal = item.orgaoEntidade.esfera.toLowerCase() === "federal";
-
-        if (matches2025Plus && matchesFederal) {
-          return true;
-        } else {
-          totalFiltradosFora++;
-          return false;
+        const res = await buscarLicitacoesPNCP(dataInicial, dataFinal, p, mod, 50);
+        
+        if (!res.records || res.records.length === 0) {
+          log(`Página ${p} modalidade ${mod} veio vazia.`);
+          break;
         }
-      });
 
-      log(`Tratamento concluído: ${recordsTratados.length} válidos, ${batchSize - recordsTratados.length} descartados (não federais ou anteriores a 2025).`);
+        const batchSize = res.records.length;
+        totalEstudosBuscados += batchSize;
+        log(`Lote recebido: ${batchSize} registros encontrados.`);
 
-      if (recordsTratados.length > 0) {
-        log(`Gravando incrementalmente no Firebase Firestore...`);
-        // Salva os itens tratados um a um no Firestore utilizando setDoc com merge: true
-        for (const item of recordsTratados) {
-          const docRef = doc(db, "licitacoes", item.numeroControlePNCP);
-          await setDoc(docRef, item, { merge: true });
-          totalSalvosNoBanco++;
+        // Tratamento e Filtragem
+        const recordsTratados = res.records.filter((item) => {
+          // Regra 1: Filtro de Ano (2025+)
+          const yearOfPub = parseInt(item.dataPublicacao.substring(0, 4)) || item.anoLicitacao;
+          const matches2025Plus = yearOfPub >= 2025;
+          
+          // Regra 2: Mantém só esfera federal
+          const matchesFederal = item.orgaoEntidade.esfera.toLowerCase() === "federal";
+
+          if (matches2025Plus && matchesFederal) {
+            return true;
+          } else {
+            totalFiltradosFora++;
+            return false;
+          }
+        });
+
+        if (recordsTratados.length > 0) {
+          for (const item of recordsTratados) {
+            const docRef = doc(db, "licitacoes", item.numeroControlePNCP);
+            await setDoc(docRef, item, { merge: true });
+            totalSalvosNoBanco++;
+          }
+          log(`Gravados ${recordsTratados.length} registros da modalidade ${mod} no Firestore.`);
         }
-        log(`Lote gravado com sucesso. +${recordsTratados.length} registros no Firestore.`);
-      }
 
-      if (p >= res.totalPaginas) {
-        log(`Fim dos resultados disponíveis na API do governo.`);
-        break;
+        if (p >= res.totalPaginas) break;
       }
     }
 

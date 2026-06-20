@@ -45,29 +45,35 @@ export function normalizarLicitacao(item: any): LicitacaoPNCP {
 
 /**
  * Consulta a API oficial do Portal Nacional de Contratações Públicas (PNCP).
- * @param dataInicial Data inicial no formato YYYYMMDD
- * @param dataFinal Data final no formato YYYYMMDD
- * @param pagina Página de consulta (1-indexed)
- * @param tamanhoPagina Tamanho do lote (recomendado: 50)
+ * Nota: Este endpoint exige o código da modalidade.
  */
 export async function buscarLicitacoesPNCP(
   dataInicial: string,
   dataFinal: string,
   pagina: number = 1,
+  codigoModalidade: number = 4, // Padrão: Pregão
   tamanhoPagina: number = 50
 ): Promise<PNCPFetchResult> {
-  const pncpUrl = `https://pncp.gov.br/api/consulta/v1/licitacoes?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=${pagina}&tamanhoPagina=${tamanhoPagina}`;
+  // Endpoint validado via Swagger
+  const pncpUrl = `https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao?dataInicial=${dataInicial}&dataFinal=${dataFinal}&codigoModalidadeContratacao=${codigoModalidade}&pagina=${pagina}&tamanhoPagina=${tamanhoPagina}`;
   
-  console.log(`[PNCP Robo] Fazendo chamada do robô ao PNCP: ${pncpUrl}`);
+  console.log(`[PNCP Robo] Fazendo chamada ao PNCP (Mod ${codigoModalidade}): ${pncpUrl}`);
   
   const response = await fetch(pncpUrl, {
+    method: "GET",
     headers: {
       "Accept": "application/json",
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0"
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     }
   });
 
+  if (response.status === 204) {
+    return { records: [], totalRegistros: 0, totalPaginas: 0 };
+  }
+
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`[PNCP Robo] Erro ${response.status} ao acessar PNCP: ${errorText.substring(0, 200)}`);
     throw new Error(`O portal PNCP retornou status de erro: ${response.status}`);
   }
 
