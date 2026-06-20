@@ -1,7 +1,9 @@
 import express from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
-import { MOCK_LICITACOES, filtrarMockData } from "./api/licitacoes";
+import { buscarLicitacoesDoFirestore } from "./api/licitacoes";
+import { executarSincronizacao, obterStatusSincronismo, obterTotalRegistrosFirestore } from "./lib/sync";
+import { db } from "./lib/firebase";
+import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
 
 async function startServer() {
   const app = express();
@@ -9,156 +11,209 @@ async function startServer() {
 
   app.use(express.json());
 
-  // API do Servidor que encapsula e faz a ponte (middleware) com a API do PNCP
+  // CORS Headers
+  app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+
+  // 1. API: Leitura rápida diretamente do Firebase Firestore
   app.get("/api/licitacoes", async (req, res) => {
     try {
       const {
-        termo,                  // Busca por palavra-chave no objeto ou razaoSocial
-        dataInicial,           // YYYYMMDD
-        dataFinal,             // YYYYMMDD
-        uf,                    // Sigla do Estado (SP, RJ...)
-        modalidade,            // Código ou nome da modalidade (1=Concorrência, 5=Pregão...)
-        esfera,                // Municipal, Estadual, Federal
-        situacao,              // Aberta, Em andamento, Homologada, Publicada
+        termo,
+        dataInicial,
+        dataFinal,
+        uf,
+        modalidade,
+        esfera,
+        situacao,
         pagina = "1",
-        tamanho = "10",
-        forceMock = "false"
+        tamanho = "6"
       } = req.query;
 
       const pageNum = parseInt(pagina as string, 10) || 1;
-      const pageSize = parseInt(tamanho as string, 10) || 10;
+      const pageSize = parseInt(tamanho as string, 10) || 6;
 
-      // Se o usuário pedir dados fictícios ou para testes, ou se forçado pelo cliente
-      if (forceMock === "true") {
-        return res.json(filtrarMockData(pageNum, pageSize, { termo, uf, modalidade, esfera, situacao }));
-      }
+      const result = await buscarLicitacoesDoFirestore(pageNum, pageSize, {
+        termo: termo as string,
+        uf: uf as string,
+        modalidade: modalidade as string,
+        esfera: esfera as string,
+        situacao: situacao as string
+      });
 
-      // Parâmetros para chamada real ao PNCP
-      // Data padrão: 2026-06-01 a 2026-06-20 se não especificado (de acordo com o tempo do sitema)
-      const queryDataInicial = (dataInicial as string) || "20260601";
-      const queryDataFinal = (dataFinal as string) || "20260620";
-
-      // Tentaremos obter dados reais da API Oficial do Portal Nacional de Contratações Públicas (PNCP)
-      let pncpUrl = `https://pncp.gov.br/api/consulta/v1/licitacoes?dataInicial=${queryDataInicial}&dataFinal=${queryDataFinal}&pagina=${pageNum}&tamanhoPagina=${pageSize}`;
-
-      // Repassar termos e filtros para a requisição da API real do Governo receber conteúdo qualificado
-      if (termo) {
-        pncpUrl += `&termo=${encodeURIComponent(termo as string)}`;
-      }
-      if (uf) {
-        pncpUrl += `&uf=${encodeURIComponent((uf as string).toUpperCase())}`;
-      }
-      if (modalidade && !isNaN(Number(modalidade))) {
-        pncpUrl += `&codigoModalidade=${encodeURIComponent(modalidade as string)}`;
-      }
-      if (esfera) {
-        let esferaCode = "";
-        const esfUpper = (esfera as string).toLowerCase();
-        if (esfUpper === "federal" || esfUpper === "f") esferaCode = "F";
-        else if (esfUpper === "estadual" || esfUpper === "e") esferaCode = "E";
-        else if (esfUpper === "municipal" || esfUpper === "m") esferaCode = "M";
-
-        if (esferaCode) {
-          pncpUrl += `&esfera=${esferaCode}`;
-        }
-      }
-
-      console.log(`[PNCP Query] Consultando API Oficial do Governo: ${pncpUrl}`);
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 segundos de tolerância
-
-      try {
-        const response = await fetch(pncpUrl, {
-          signal: controller.signal,
-          headers: {
-            "Accept": "application/json",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0"
-          }
-        });
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-          const rawData = await response.json();
-          // Retornamos os resultados reais mapeados ou filtrados por termo, caso tenha termo na busca
-          let records = rawData.data || [];
-
-          // Se houver filtro adicional que a API de consulta do PNCP não gerencia de forma estrita ou para complementar a busca local:
-          if (termo) {
-            const queryClean = (termo as string).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            records = records.filter((item: any) => {
-              const objClean = (item.objeto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-              const organClean = (item.orgaoEntidade?.razaoSocial || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-              return objClean.includes(queryClean) || organClean.includes(queryClean);
-            });
-          }
-
-          if (uf) {
-            records = records.filter((item: any) => 
-              (item.orgaoEntidade?.uf || "").toLowerCase() === (uf as string).toLowerCase()
-            );
-          }
-
-          if (modalidade) {
-            records = records.filter((item: any) => 
-              String(item.modalidadeId) === String(modalidade) || 
-              (item.modalidadeNome || "").toLowerCase().includes((modalidade as string).toLowerCase())
-            );
-          }
-
-          if (esfera) {
-            records = records.filter((item: any) =>
-              (item.orgaoEntidade?.esfera || "").toLowerCase() === (esfera as string).toLowerCase()
-            );
-          }
-
-          return res.json({
-            success: true,
-            source: "PNCP_LIVE",
-            data: records,
-            totalRegistros: rawData.totalRegistros || records.length,
-            totalPaginas: rawData.totalPaginas || Math.ceil(records.length / pageSize),
-            pagina: pageNum,
-            tamanhoPagina: pageSize
-          });
-        } else {
-          console.warn(`[PNCP Query Warning] API Real retornou status não-200: ${response.status}. Usando dados simulados.`);
-        }
-      } catch (err: any) {
-        clearTimeout(timeoutId);
-        console.warn(`[PNCP Query Error] Ocorreu uma exceção ao chamar a API real do PNCP: ${err.message || err}`);
-      }
-
-      // Fallback gracioso para dados simulados extremamente representativos
-      return res.json(filtrarMockData(pageNum, pageSize, { termo, uf, modalidade, esfera, situacao }));
-
+      return res.json(result);
     } catch (error: any) {
-      console.error("Erro interno no servidor:", error);
+      console.error("[Server Error] Falha de leitora em /api/licitacoes:", error);
       res.status(500).json({
         success: false,
-        message: "Ocorreu um erro ao processar os parâmetros de consulta de licitações.",
+        message: "Ocorreu um erro ao consultar o banco de dados Firebase Firestore.",
         error: error.message
       });
     }
   });
 
-  // Serve assets do build de produção ou integra Vite no desenvolvimento
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
+  // 2. API: Robô de Ingestão e Sincronização incremental do PNCP (Suporta GET e POST para Cron Vercel)
+  app.all("/api/sync", async (req, res) => {
+    try {
+      let queryDataInicial = "20250101";
+      let queryDataFinal = "20251231";
+      let limitPages = 3;
+
+      if (req.method === "POST") {
+        const { dataInicial, dataFinal, paginasMax } = req.body;
+        queryDataInicial = dataInicial || "20250101";
+        queryDataFinal = dataFinal || "20251231";
+        limitPages = parseInt(String(paginasMax), 10) || 3;
+      } else {
+        // GET request (e.g. from Vercel Cron)
+        const { dataInicial, dataFinal, paginasMax } = req.query;
+        
+        if (dataInicial || dataFinal) {
+          queryDataInicial = (dataInicial as string) || "20250101";
+          queryDataFinal = (dataFinal as string) || "20251231";
+          limitPages = parseInt(String(paginasMax), 10) || 3;
+        } else {
+          // Default rolling window: from 15 days ago to today (perfect for continuous automation)
+          const today = new Date();
+          const fifteenDaysAgo = new Date();
+          fifteenDaysAgo.setDate(today.getDate() - 15);
+          
+          const formatDate = (d: Date) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            return `${year}${month}${day}`;
+          };
+          
+          queryDataInicial = formatDate(fifteenDaysAgo);
+          queryDataFinal = formatDate(today);
+          limitPages = 4; // Fetch up to 4 pages (200 records) automatically
+        }
+      }
+
+      console.log(`[Sync Trigger] Iniciando sincronismo via ${req.method}. Período selecionado: ${queryDataInicial} a ${queryDataFinal} (Max Pág: ${limitPages})`);
+      
+      const stats = await executarSincronizacao(queryDataInicial, queryDataFinal, limitPages);
+
+      return res.json({
+        success: stats.success,
+        stats
+      });
+    } catch (error: any) {
+      console.error("[Server Error] Falha de processamento em /api/sync:", error);
+      res.status(500).json({
+        success: false,
+        message: "Falha na execução do processo de sincronismo.",
+        error: error.message
+      });
+    }
+  });
+
+  // 3. API: Status do Robô e número total de registros salvos no Firestore
+  app.get("/api/sync/status", async (req, res) => {
+    try {
+      const stats = await obterStatusSincronismo();
+      const totalFirestore = await obterTotalRegistrosFirestore();
+      
+      return res.json({
+        success: true,
+        totalRecords: totalFirestore,
+        lastSync: stats
+      });
+    } catch (error: any) {
+      console.error("[Server Error] Falha em obter status do robô:", error);
+      res.status(500).json({
+        success: false,
+        message: "Erro ao ler metadados do banco secundário.",
+        error: error.message
+      });
+    }
+  });
+
+  // 4. API: Limpeza de cache no Firestore para testes limpos e incríveis pelo usuário
+  app.post("/api/clear", async (req, res) => {
+    try {
+      console.log("[Wipe Engine] Iniciando limpeza total da base de licitações para teste do usuário...");
+      
+      // Apaga os registros de licitações
+      const colRef = collection(db, "licitacoes");
+      const snap = await getDocs(colRef);
+      let count = 0;
+      
+      for (const d of snap.docs) {
+        await deleteDoc(doc(db, "licitacoes", d.id));
+        count++;
+      }
+
+      // Apaga registros de status
+      try {
+        await deleteDoc(doc(db, "config", "sync_stats"));
+      } catch (e) {}
+
+      console.log(`[Wipe Engine] Sucesso: ${count} registros limpos do Firebase.`);
+      
+      return res.json({
+        success: true,
+        message: `Wipe completo! ${count} registros removidos com sucesso. O Firestore está zerado para novos testes de ingestão incremental!`,
+        recordsCleaned: count
+      });
+    } catch (error: any) {
+      console.error("[Server Error] Falha no wipe do banco:", error);
+      res.status(500).json({
+        success: false,
+        message: "Erro ao zerar tabelas do Firestore.",
+        error: error.message
+      });
+    }
+  });
+
+  // Health Check / Root route
+  app.get("/", (req, res) => {
+    res.json({ 
+      status: "online", 
+      message: "PNCP Modern API Server (Firebase Backend Only)",
+      endpoints: [
+        "/api/licitacoes",
+        "/api/sync",
+        "/api/sync/status"
+      ]
     });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[PNCP Server] Servidor escutando perfeitamente na porta ${PORT}`);
+    console.log(`[PNCP Modern Server] API Backend escutando perfeitamente na porta ${PORT}`);
+    
+    // Disparo Automático: Carga Inicial de Dados no Boot
+    // Isso garante que o usuário tenha dados assim que o servidor subir pela primeira vez
+    const triggerInitialSync = async () => {
+      console.log("[Boot Trigger] Iniciando carga de dados automática de inicialização...");
+      try {
+        const today = new Date();
+        const startOfYear = "20250101"; // Início de 2025 conforme regra
+        const formatDate = (d: Date) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+        const endDate = formatDate(today);
+
+        // Executa sync em background para não travar o boot do servidor
+        executarSincronizacao(startOfYear, endDate, 2)
+          .then(stats => {
+            console.log(`[Boot Trigger] Sincronismo inicial concluído. Salvos: ${stats.savedCount} registros.`);
+          })
+          .catch(err => {
+            console.error("[Boot Trigger] Falha na carga automática de boot:", err);
+          });
+      } catch (e) {
+        console.error("[Boot Trigger] Erro ao preparar carga inicial:", e);
+      }
+    };
+
+    triggerInitialSync();
   });
 }
 

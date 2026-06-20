@@ -1,6 +1,6 @@
 {
-  "name": "Consulta de Licitações PNCP",
-  "description": "Painel completo de consulta e busca em tempo real de licitações do Portal Nacional de Contratações Públicas (PNCP).",
+  "name": "Backend PNCP API",
+  "description": "API Backend para ingestão e consulta de licitações do PNCP com persistência no Firebase Firestore.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

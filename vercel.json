@@ -1,13 +1,19 @@
 {
   "version": 2,
+  "crons": [
+    {
+      "path": "/api/sync",
+      "schedule": "0 6 * * *"
+    }
+  ],
   "rewrites": [
     {
-      "source": "/api/licitacoes",
-      "destination": "/api/licitacoes.ts"
+      "source": "/api/(.*)",
+      "destination": "/server.ts"
     },
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/server.ts"
     }
   ]
 }

@@ -1,514 +1,129 @@
-export const MOCK_LICITACOES = [
-  {
-    numeroControlePNCP: "09534032000103-1-0000140-2026",
-    numeroLicitacao: "00140/2026",
-    anoLicitacao: 2026,
-    objeto: "Contratação de empresa especializada para prestação de serviços de manutenção corretiva e preventiva de equipamentos de climatização e ar-condicionado nas Escolas Municipais de Educação Infantil (EMEIs).",
-    valorEstimado: 1250000.00,
-    dataPublicacao: "2026-06-15T09:30:00.000Z",
-    dataAberturaProposta: "2026-06-25T10:00:00.000Z",
-    situacaoLicitacao: "Em andamento",
-    situacaoId: "em_andamento",
-    modalidadeId: "5",
-    modalidadeNome: "Pregão Eletrônico",
-    orgaoEntidade: {
-      cnpj: "09534032000103",
-      razaoSocial: "PREFEITURA MUNICIPAL DE SÃO PAULO",
-      poder: "Executivo",
-      esfera: "Municipal",
-      uf: "SP"
-    },
-    linkOriginal: "https://pncp.gov.br/app/editais/09534032000103/2026-140"
-  },
-  {
-    numeroControlePNCP: "34080122000108-1-000045-2026",
-    numeroLicitacao: "00045/2026",
-    anoLicitacao: 2026,
-    objeto: "Aquisição de medicamentos oncológicos, insumos hospitalares e materiais descartáveis para abastecimento estratégico da rede de hospitais públicos estaduais por um período de 12 meses.",
-    valorEstimado: 4890300.00,
-    dataPublicacao: "2026-06-18T14:15:00.000Z",
-    dataAberturaProposta: "2026-07-02T09:00:00.000Z",
-    situacaoLicitacao: "Publicada",
-    situacaoId: "publicada",
-    modalidadeId: "5",
-    modalidadeNome: "Pregão Eletrônico",
-    orgaoEntidade: {
-      cnpj: "34080122000108",
-      razaoSocial: "SECRETARIA DE ESTADO DE SAÚDE DO RIO DE JANEIRO",
-      poder: "Executivo",
-      esfera: "Estadual",
-      uf: "RJ"
-    },
-    linkOriginal: "https://pncp.gov.br/app/editais/34080122000108/2026-45"
-  },
-  {
-    numeroControlePNCP: "05118321000105-1-000012-2026",
-    numeroLicitacao: "00012/2026",
-    anoLicitacao: 2026,
-    objeto: "Prestação de serviços de migração de infraestrutura de datacenter físico local para ambiente de nuvem híbrida inteligente (Cloud Computing) de alto desempenho com suporte técnico 24/7.",
-    valorEstimado: 12450000.00,
-    dataPublicacao: "2026-06-19T08:00:00.000Z",
-    dataAberturaProposta: "2026-07-15T14:00:00.000Z",
-    situacaoLicitacao: "Publicada",
-    situacaoId: "publicada",
-    modalidadeId: "1",
-    modalidadeNome: "Concorrência Eletrônica",
-    orgaoEntidade: {
-      cnpj: "05118321000105",
-      razaoSocial: "MINISTÉRIO DA CIÊNCIA, TECNOLOGIA E INOVAÇÕES",
-      poder: "Executivo",
-      esfera: "Federal",
-      uf: "DF"
-    },
-    linkOriginal: "https://pncp.gov.br/app/editais/05118321000105/2026-12"
-  },
-  {
-    numeroControlePNCP: "18715320000115-1-000210-2026",
-    numeroLicitacao: "00210/2026",
-    anoLicitacao: 2026,
-    objeto: "Contratação de serviços de engenharia civil aplicados à conservação asfáltica, recapeamento estrutural e pavimentação de vias urbanas de grande fluxo nas regionais Leste e Sul.",
-    valorEstimado: 3120000.00,
-    dataPublicacao: "2026-06-12T11:00:00.000Z",
-    dataAberturaProposta: "2026-06-26T08:30:00.000Z",
-    situacaoLicitacao: "Em andamento",
-    situacaoId: "em_andamento",
-    modalidadeId: "1",
-    modalidadeNome: "Concorrência Eletrônica",
-    orgaoEntidade: {
-      cnpj: "18715320000115",
-      razaoSocial: "PREFEITURA MUNICIPAL DE BELO HORIZONTE",
-      poder: "Executivo",
-      esfera: "Municipal",
-      uf: "MG"
-    },
-    linkOriginal: "https://pncp.gov.br/app/editais/18715320000115/2026-210"
-  },
-  {
-    numeroControlePNCP: "92967927000190-1-000078-2026",
-    numeroLicitacao: "00078/2026",
-    anoLicitacao: 2026,
-    objeto: "Compra de computadores portáteis corporativos (notebooks), monitores ergonômicos e periféricos para modernização das estações de trabalho e laboratórios científicos avançados.",
-    valorEstimado: 680000.00,
-    dataPublicacao: "2026-06-20T10:00:00.000Z",
-    dataAberturaProposta: "2026-06-30T13:00:00.000Z",
-    situacaoLicitacao: "Aberta",
-    situacaoId: "aberta",
-    modalidadeId: "5",
-    modalidadeNome: "Pregão Eletrônico",
-    orgaoEntidade: {
-      cnpj: "92967927000190",
-      razaoSocial: "UNIVERSIDADE FEDERAL DO RIO GRANDE DO SUL",
-      poder: "Executivo",
-      esfera: "Federal",
-      uf: "RS"
-    },
-    linkOriginal: "https://pncp.gov.br/app/editais/92967927000190/2026-78"
-  },
-  {
-    numeroControlePNCP: "13927801000155-1-000305-2026",
-    numeroLicitacao: "00305/2026",
-    anoLicitacao: 2026,
-    objeto: "Aquisição continuada de lotes de merenda escolar, alimentos não perecíveis de alto teor nutricional e fórmulas infantis específicas para a rede municipal de ensino infantil.",
-    valorEstimado: 2150000.00,
-    dataPublicacao: "2026-06-10T16:00:00.000Z",
-    dataAberturaProposta: "2026-06-22T09:00:00.000Z",
-    situacaoLicitacao: "Em andamento",
-    situacaoId: "em_andamento",
-    modalidadeId: "5",
-    modalidadeNome: "Pregão Eletrônico",
-    orgaoEntidade: {
-      cnpj: "13927801000155",
-      razaoSocial: "PREFEITURA MUNICIPAL DE SALVADOR",
-      poder: "Executivo",
-      esfera: "Municipal",
-      uf: "BA"
-    },
-    linkOriginal: "https://pncp.gov.br/app/editais/13927801000155/2026-305"
-  },
-  {
-    numeroControlePNCP: "77818290000109-1-000115-2026",
-    numeroLicitacao: "00115/2026",
-    anoLicitacao: 2026,
-    objeto: "Contratação de construtora qualificada em regime de empreitada menor preço global para ampla reforma estrutural, revitalização hidráulica e lógica do Fórum Cível de Curitiba.",
-    valorEstimado: 1780000.00,
-    dataPublicacao: "2026-06-08T08:30:00.000Z",
-    dataAberturaProposta: "2026-06-29T10:00:00.000Z",
-    situacaoLicitacao: "Em andamento",
-    situacaoId: "em_andamento",
-    modalidadeId: "1",
-    modalidadeNome: "Concorrência Eletrônica",
-    orgaoEntidade: {
-      cnpj: "77818290000109",
-      razaoSocial: "TRIBUNAL DE JUSTIÇA DO ESTADO DO PARANÁ",
-      poder: "Judiciário",
-      esfera: "Estadual",
-      uf: "PR"
-    },
-    linkOriginal: "https://pncp.gov.br/app/editais/77818290000109/2026-115"
-  },
-  {
-    numeroControlePNCP: "12318491000130-1-000092-2026",
-    numeroLicitacao: "00092/2026",
-    anoLicitacao: 2026,
-    objeto: "Aquisição e integração técnica de microgeradores fotovoltaicos avançados (Painéis Solares) destinados a suprimento independente em 45 Unidades de Saúde da Família municipais.",
-    valorEstimado: 1420000.00,
-    dataPublicacao: "2026-06-11T13:40:00.000Z",
-    dataAberturaProposta: "2026-06-28T09:00:00.000Z",
-    situacaoLicitacao: "Aberta",
-    situacaoId: "aberta",
-    modalidadeId: "5",
-    modalidadeNome: "Pregão Eletrônico",
-    orgaoEntidade: {
-      cnpj: "12318491000130",
-      razaoSocial: "PREFEITURA MUNICIPAL DE FORTALEZA",
-      poder: "Executivo",
-      esfera: "Municipal",
-      uf: "CE"
-    },
-    linkOriginal: "https://pncp.gov.br/app/editais/12318491000130/2026-92"
-  },
-  {
-    numeroControlePNCP: "08479219000122-1-000014-2026",
-    numeroLicitacao: "00014/2026",
-    anoLicitacao: 2026,
-    objeto: "Fornecimento de tubulações estruturais pesadas em PVC, conexões de engate rápido e registros hidráulicos mecânicos sob medida para intervenções civis gerais de saneamento básico e captação hídrica.",
-    valorEstimado: 5620000.00,
-    dataPublicacao: "2026-05-28T10:00:00.000Z",
-    dataAberturaProposta: "2026-06-11T14:00:00.000Z",
-    situacaoLicitacao: "Homologada",
-    situacaoId: "homologada",
-    modalidadeId: "5",
-    modalidadeNome: "Pregão Eletrônico",
-    orgaoEntidade: {
-      cnpj: "08479219000122",
-      razaoSocial: "COMPANHIA PERNAMBUCANA DE SANEAMENTO - COMPESA",
-      poder: "Executivo",
-      esfera: "Estadual",
-      uf: "PE"
-    },
-    linkOriginal: "https://pncp.gov.br/app/editais/08479219000122/2026-14"
-  },
-  {
-    numeroControlePNCP: "41920192000101-1-000067-2026",
-    numeroLicitacao: "00067/2026",
-    anoLicitacao: 2026,
-    objeto: "Contratação emergencial de transporte escolar hidroviário fluvial para alunos das redes municipais inseridos no projeto ribeirinho em regiões de difícil acesso geográfico do estado.",
-    valorEstimado: 4200000.00,
-    dataPublicacao: "2026-06-03T17:10:00.000Z",
-    dataAberturaProposta: "2026-06-18T10:00:00.000Z",
-    situacaoLicitacao: "Encerrada",
-    situacaoId: "encerrada",
-    modalidadeId: "5",
-    modalidadeNome: "Pregão Eletrônico",
-    orgaoEntidade: {
-      cnpj: "41920192000101",
-      razaoSocial: "SECRETARIA DE ESTADO DE EDUCAÇÃO DO AMAZONAS",
-      poder: "Executivo",
-      esfera: "Estadual",
-      uf: "AM"
-    },
-    linkOriginal: "https://pncp.gov.br/app/editais/41920192000101/2026-67"
-  },
-  {
-    numeroControlePNCP: "89110291000199-1-000112-2026",
-    numeroLicitacao: "00112/2026",
-    anoLicitacao: 2026,
-    objeto: "Serviço público continuado de varrição mecânica, capina manual das orlas de praias urbanas, coleta seletiva e destinação ecologicamente responsável de resíduos sólidos.",
-    valorEstimado: 8900000.00,
-    dataPublicacao: "2026-06-05T09:00:00.000Z",
-    dataAberturaProposta: "2026-06-25T11:00:00.000Z",
-    situacaoLicitacao: "Em andamento",
-    situacaoId: "em_andamento",
-    modalidadeId: "5",
-    modalidadeNome: "Pregão Eletrônico",
-    orgaoEntidade: {
-      cnpj: "89110291000199",
-      razaoSocial: "AUTARQUIA DE MELHORAMENTOS DE FLORIANÓPOLIS - COMCAP",
-      poder: "Executivo",
-      esfera: "Municipal",
-      uf: "SC"
-    },
-    linkOriginal: "https://pncp.gov.br/app/editais/89110291000199/2026-112"
-  },
-  {
-    numeroControlePNCP: "05830193000102-1-000094-2026",
-    numeroLicitacao: "00094/2026",
-    anoLicitacao: 2026,
-    objeto: "Aquisição de frotas de utilitários de segurança caracterizados tipo SUV equipados com grades de custódia, rádio móvel georreferenciado de alta potência e luzes estroboscópicas LED.",
-    valorEstimado: 15600000.00,
-    dataPublicacao: "2026-06-16T15:30:00.000Z",
-    dataAberturaProposta: "2026-07-05T10:00:00.000Z",
-    situacaoLicitacao: "Publicada",
-    situacaoId: "publicada",
-    modalidadeId: "5",
-    modalidadeNome: "Pregão Eletrônico",
-    orgaoEntidade: {
-      cnpj: "05830193000102",
-      razaoSocial: "SECRETARIA DE SEGURANÇA PÚBLICA DE GOIÁS",
-      poder: "Executivo",
-      esfera: "Estadual",
-      uf: "GO"
-    },
-    linkOriginal: "https://pncp.gov.br/app/editais/05830193000102/2026-94"
-  },
-  {
-    numeroControlePNCP: "56901825000111-1-000041-2026",
-    numeroLicitacao: "00041/2026",
-    anoLicitacao: 2026,
-    objeto: "Contratação terceirizada especializada em segurança e vigilância armada nos prédios institucionais, reitoria e blocos docentes integrados das subunidades universitárias metropolitanas.",
-    valorEstimado: 2750300.00,
-    dataPublicacao: "2026-06-14T07:30:00.000Z",
-    dataAberturaProposta: "2026-06-28T09:00:00.000Z",
-    situacaoLicitacao: "Em andamento",
-    situacaoId: "em_andamento",
-    modalidadeId: "5",
-    modalidadeNome: "Pregão Eletrônico",
-    orgaoEntidade: {
-      cnpj: "56901825000111",
-      razaoSocial: "UNIVERSIDADE FEDERAL DO PARÁ",
-      poder: "Executivo",
-      esfera: "Federal",
-      uf: "PA"
-    },
-    linkOriginal: "https://pncp.gov.br/app/editais/56901825000111/2026-41"
-  },
-  {
-    numeroControlePNCP: "12543912000140-1-000019-2026",
-    numeroLicitacao: "00019/2026",
-    anoLicitacao: 2026,
-    objeto: "Implantação e customização de sistema de gestão informatizado integrado (ERP), focado no controle fiscal de arrecadação municipal, auditorias eletrônicas de dados e emissão de notas digitais nativas.",
-    valorEstimado: 950000.00,
-    dataPublicacao: "2026-06-17T11:45:00.000Z",
-    dataAberturaProposta: "2026-06-30T14:30:00.000Z",
-    situacaoLicitacao: "Publicada",
-    situacaoId: "publicada",
-    modalidadeId: "5",
-    modalidadeNome: "Pregão Eletrônico",
-    orgaoEntidade: {
-      cnpj: "12543912000140",
-      razaoSocial: "PREFEITURA MUNICIPAL DE VALINHOS",
-      poder: "Executivo",
-      esfera: "Municipal",
-      uf: "SP"
-    },
-    linkOriginal: "https://pncp.gov.br/app/editais/12543912000140/2026-19"
-  },
-  {
-    numeroControlePNCP: "15903912000188-1-000021-2026",
-    numeroLicitacao: "00021/2026",
-    anoLicitacao: 2026,
-    objeto: "Contratação de engenharia consultiva avançada para a confecção física de estudos de contenção geológica preventiva em encostas de morros, vulnerabilidades geotécnicas urbanas.",
-    valorEstimado: 420000.00,
-    dataPublicacao: "2026-06-13T10:00:00.000Z",
-    dataAberturaProposta: "2026-06-25T15:00:00.000Z",
-    situacaoLicitacao: "Em andamento",
-    situacaoId: "em_andamento",
-    modalidadeId: "5",
-    modalidadeNome: "Pregão Eletrônico",
-    orgaoEntidade: {
-      cnpj: "15903912000188",
-      razaoSocial: "PREFEITURA MUNICIPAL DE NITERÓI",
-      poder: "Executivo",
-      esfera: "Municipal",
-      uf: "RJ"
-    },
-    linkOriginal: "https://pncp.gov.br/app/editais/15903912000188/2026-21"
-  }
-];
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../lib/firebase";
+import { LicitacaoPNCP, ApiResponse } from "../lib/types";
 
-export function filtrarMockData(pPage: number, pSize: number, filters: any = {}) {
-  let records = [...MOCK_LICITACOES];
-  const { termo, uf, modalidade, esfera, situacao } = filters;
-
-  // 1. Filtro por palavra-chave / termo
-  if (termo) {
-    const queryClean = String(termo).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    records = records.filter(item => {
-      const objDesc = item.objeto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const orgName = item.orgaoEntidade.razaoSocial.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const ctrlNum = item.numeroControlePNCP.toLowerCase();
-      return objDesc.includes(queryClean) || orgName.includes(queryClean) || ctrlNum.includes(queryClean);
-    });
-  }
-
-  // 2. Filtro por UF
-  if (uf) {
-    records = records.filter(item => item.orgaoEntidade.uf.toLowerCase() === String(uf).toLowerCase());
-  }
-
-  // 3. Filtro por Modalidade (ID ou Nome)
-  if (modalidade) {
-    records = records.filter(item => 
-      item.modalidadeId === String(modalidade) || 
-      item.modalidadeNome.toLowerCase().includes(String(modalidade).toLowerCase())
-    );
-  }
-
-  // 4. Filtro por Esfera
-  if (esfera) {
-    records = records.filter(item => item.orgaoEntidade.esfera.toLowerCase() === String(esfera).toLowerCase());
-  }
-
-  // 5. Filtro por Situação
-  if (situacao) {
-    records = records.filter(item => item.situacaoLicitacao.toLowerCase() === String(situacao).toLowerCase() || item.situacaoId === String(situacao).toLowerCase());
-  }
-
-  const total = records.length;
-  const offset = (pPage - 1) * pSize;
-  const paginatedRecords = records.slice(offset, offset + pSize);
-
-  return {
-    success: true,
-    source: "MOCK_FALLBACK",
-    data: paginatedRecords,
-    totalRegistros: total,
-    totalPaginas: Math.ceil(total / pSize),
-    pagina: pPage,
-    tamanhoPagina: pSize
-  };
-}
-
-export default async function handler(req: any, res: any) {
+/**
+ * Consulta todas as licitações armazenadas no Firebase Firestore,
+ * realiza filtragem avançada de busca em memória (case-insensitive e livre de acentos)
+ * e retorna o resultado paginado e ordenado por data de publicação de forma super rápida.
+ */
+export async function buscarLicitacoesDoFirestore(
+  pagina: number = 1,
+  tamanhoPagina: number = 10,
+  filtros: {
+    termo?: string;
+    uf?: string;
+    modalidade?: string;
+    esfera?: string;
+    situacao?: string;
+  } = {}
+): Promise<ApiResponse & { databaseEmpty?: boolean }> {
   try {
-    // Definir cabeçalhos CORS básicos para evitar problemas se acessado de fora
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
-    res.setHeader(
-      "Access-Control-Allow-Headers",
-      "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
-    );
-
-    if (req.method === "OPTIONS") {
-      res.status(200).end();
-      return;
+    const colRef = collection(db, "licitacoes");
+    const snap = await getDocs(colRef);
+    
+    if (snap.empty) {
+      console.log("[Firestore Query] Banco de dados está vazio. Sem registros.");
+      return {
+        success: true,
+        source: "PNCP_LIVE",
+        data: [],
+        totalRegistros: 0,
+        totalPaginas: 1,
+        pagina,
+        tamanhoPagina,
+        databaseEmpty: true,
+        message: "O banco de dados do Firebase Firestore está vazio. Use o robô sincronizador para carregar dados!"
+      };
     }
 
-    const {
-      termo,                  // Busca por palavra-chave no objeto ou razaoSocial
-      dataInicial,           // YYYYMMDD
-      dataFinal,             // YYYYMMDD
-      uf,                    // Sigla do Estado (SP, RJ...)
-      modalidade,            // Código ou nome da modalidade (1=Concorrência, 5=Pregão...)
-      esfera,                // Municipal, Estadual, Federal
-      situacao,              // Aberta, Em andamento, Homologada, Publicada
-      pagina = "1",
-      tamanho = "10",
-      forceMock = "false"
-    } = req.query;
-
-    const pageNum = parseInt(pagina as string, 10) || 1;
-    const pageSize = parseInt(tamanho as string, 10) || 10;
-
-    // Se o usuário pedir dados fictícios ou se forçado pelo cliente
-    if (forceMock === "true") {
-      return res.status(200).json(filtrarMockData(pageNum, pageSize, { termo, uf, modalidade, esfera, situacao }));
-    }
-
-    // Parâmetros para chamada real ao PNCP
-    const queryDataInicial = (dataInicial as string) || "20260601";
-    const queryDataFinal = (dataFinal as string) || "20260620";
-
-    // Tentamos obter dados reais da API Oficial do Portal Nacional de Contratações Públicas (PNCP)
-    let pncpUrl = `https://pncp.gov.br/api/consulta/v1/licitacoes?dataInicial=${queryDataInicial}&dataFinal=${queryDataFinal}&pagina=${pageNum}&tamanhoPagina=${pageSize}`;
-
-    // Repassar termos e filtros para a requisição da API real do Governo receber conteúdo qualificado
-    if (termo) {
-      pncpUrl += `&termo=${encodeURIComponent(termo as string)}`;
-    }
-    if (uf) {
-      pncpUrl += `&uf=${encodeURIComponent((uf as string).toUpperCase())}`;
-    }
-    if (modalidade && !isNaN(Number(modalidade))) {
-      pncpUrl += `&codigoModalidade=${encodeURIComponent(modalidade as string)}`;
-    }
-    if (esfera) {
-      let esferaCode = "";
-      const esfUpper = (esfera as string).toLowerCase();
-      if (esfUpper === "federal" || esfUpper === "f") esferaCode = "F";
-      else if (esfUpper === "estadual" || esfUpper === "e") esferaCode = "E";
-      else if (esfUpper === "municipal" || esfUpper === "m") esferaCode = "M";
-
-      if (esferaCode) {
-        pncpUrl += `&esfera=${esferaCode}`;
-      }
-    }
-
-    console.log(`[Vercel Serverless PNCP Query] Consultando API Oficial do Governo: ${pncpUrl}`);
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 segundos de tolerância maior para ambientes de nuvem lentos
-
-    try {
-      const response = await fetch(pncpUrl, {
-        signal: controller.signal,
-        headers: {
-          "Accept": "application/json",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0"
-        }
-      });
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const rawData = await response.json();
-        let records = rawData.data || [];
-
-        // Filtro local adicional caso o endpoint do PNCP não refine completamente
-        if (termo) {
-          const queryClean = (termo as string).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-          records = records.filter((item: any) => {
-            const objClean = (item.objeto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            const organClean = (item.orgaoEntidade?.razaoSocial || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            return objClean.includes(queryClean) || organClean.includes(queryClean);
-          });
-        }
-
-        if (uf) {
-          records = records.filter((item: any) => 
-            (item.orgaoEntidade?.uf || "").toLowerCase() === (uf as string).toLowerCase()
-          );
-        }
-
-        if (modalidade) {
-          records = records.filter((item: any) => 
-            String(item.modalidadeId) === String(modalidade) || 
-            (item.modalidadeNome || "").toLowerCase().includes((modalidade as string).toLowerCase())
-          );
-        }
-
-        if (esfera) {
-          records = records.filter((item: any) =>
-            (item.orgaoEntidade?.esfera || "").toLowerCase() === (esfera as string).toLowerCase()
-          );
-        }
-
-        return res.status(200).json({
-          success: true,
-          source: "PNCP_LIVE",
-          data: records,
-          totalRegistros: rawData.totalRegistros || records.length,
-          totalPaginas: rawData.totalPaginas || Math.ceil(records.length / pageSize),
-          pagina: pageNum,
-          tamanhoPagina: pageSize
-        });
-      } else {
-        console.warn(`[PNCP Query Warning] API Real retornou status não-200: ${response.status}. Usando dados simulados.`);
-      }
-    } catch (err: any) {
-      clearTimeout(timeoutId);
-      console.warn(`[PNCP Query Error] Ocorreu uma exceção ao chamar a API real do PNCP: ${err.message || err}`);
-    }
-
-    // Fallback gracioso para dados simulados extremamente representativos
-    return res.status(200).json(filtrarMockData(pageNum, pageSize, { termo, uf, modalidade, esfera, situacao }));
-
-  } catch (error: any) {
-    console.error("Erro interno no Vercel Serverless Function:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Ocorreu um erro ao processar os parâmetros de consulta de licitações no Vercel Serverless.",
-      error: error.message
+    const records: LicitacaoPNCP[] = [];
+    snap.forEach((doc) => {
+      records.push(doc.data() as LicitacaoPNCP);
     });
+
+    // 1. Filtragem Interativa e Inteligente em Memória
+    let filteredRecords = [...records];
+
+    // Filtro 1: Termo de Busca (Objeto ou Razão Social do Órgão)
+    if (filtros.termo) {
+      const termoNormalizado = filtros.termo
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      
+      filteredRecords = filteredRecords.filter((item) => {
+        const objClean = (item.objeto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const razaoClean = (item.orgaoEntidade?.razaoSocial || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const cnpjClean = (item.orgaoEntidade?.cnpj || "").replace(/[^\d]/g, "");
+        const numControleClean = (item.numeroControlePNCP || "").toLowerCase();
+        
+        return (
+          objClean.includes(termoNormalizado) ||
+          razaoClean.includes(termoNormalizado) ||
+          cnpjClean.includes(termoNormalizado) ||
+          numControleClean.includes(termoNormalizado)
+        );
+      });
+    }
+
+    // Filtro 2: Estado (UF)
+    if (filtros.uf) {
+      filteredRecords = filteredRecords.filter(
+        (item) => (item.orgaoEntidade?.uf || "").toLowerCase() === filtros.uf!.toLowerCase()
+      );
+    }
+
+    // Filtro 3: Modalidade
+    if (filtros.modalidade) {
+      filteredRecords = filteredRecords.filter((item) => {
+        const itemModId = String(item.modalidadeId || "");
+        const itemModNome = String(item.modalidadeNome || "").toLowerCase();
+        const searchMod = filtros.modalidade!.toLowerCase();
+        return itemModId === searchMod || itemModNome.includes(searchMod);
+      });
+    }
+
+    // Filtro 4: Esfera
+    if (filtros.esfera) {
+      filteredRecords = filteredRecords.filter(
+        (item) => (item.orgaoEntidade?.esfera || "").toLowerCase() === filtros.esfera!.toLowerCase()
+      );
+    }
+
+    // Filtro 5: Situação do Edital
+    if (filtros.situacao) {
+      const sLower = filtros.situacao.toLowerCase();
+      filteredRecords = filteredRecords.filter((item) => {
+        const sLicitacao = (item.situacaoLicitacao || "").toLowerCase();
+        return sLicitacao.includes(sLower);
+      });
+    }
+
+    // 2. Ordenação por data de publicação (mais recentes primeiro)
+    filteredRecords.sort((a, b) => {
+      const dateA = new Date(a.dataPublicacao).getTime() || 0;
+      const dateB = new Date(b.dataPublicacao).getTime() || 0;
+      return dateB - dateA;
+    });
+
+    // 3. Paginação de resultados
+    const totalRegistros = filteredRecords.length;
+    const totalPaginas = Math.ceil(totalRegistros / tamanhoPagina) || 1;
+    const offset = (pagina - 1) * tamanhoPagina;
+    const paginatedData = filteredRecords.slice(offset, offset + tamanhoPagina);
+
+    return {
+      success: true,
+      source: "PNCP_LIVE", // Sempre indica fonte real/sincronizada
+      data: paginatedData,
+      totalRegistros,
+      totalPaginas,
+      pagina,
+      tamanhoPagina
+    };
+  } catch (err: any) {
+    console.error("[Firestore Query Error] Falha de leitura:", err);
+    throw new Error(`Erro ao ler dados do Firestore: ${err.message || err}`);
   }
 }
