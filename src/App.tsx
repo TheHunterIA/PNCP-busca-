@@ -62,6 +62,16 @@ export default function App() {
   const [hasMore, setHasMore] = useState(false);
   const [total, setTotal] = useState(0);
   const [showLogs, setShowLogs] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Advanced filters state
+  const [advancedFilters, setAdvancedFilters] = useState({
+    cnpj: '',
+    catmat: '',
+    uf: '',
+    esfera: '',
+    modalidade: ''
+  });
 
   const fetchLicitacoes = async () => {
     setLoading(true);
@@ -69,7 +79,12 @@ export default function App() {
       const params = new URLSearchParams({
         q: search,
         pagina: page.toString(),
-        limite: '10'
+        limite: '10',
+        cnpj: advancedFilters.cnpj,
+        catmat: advancedFilters.catmat,
+        uf: advancedFilters.uf,
+        esfera: advancedFilters.esfera,
+        modalidade: advancedFilters.modalidade
       });
       const res = await fetch(`/api/licitacoes?${params}`);
       const data = await res.json();
@@ -200,20 +215,96 @@ export default function App() {
         {/* Search & Dashboard */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
           <div className="lg:col-span-9">
-            <form onSubmit={handleSearch} className="relative group">
-              <input 
-                type="text" 
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="PROCURAR POR CNPJ, ÓRGÃO OU OBJETO..." 
-                className="w-full bg-white border-2 border-slate-100 rounded-2xl py-5 pl-14 pr-6 shadow-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-300 text-sm font-medium tracking-tight"
-              />
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                {search && <button type="button" onClick={() => {setSearch(''); setPage(1);}} className="text-[10px] font-bold uppercase text-slate-400 hover:text-slate-900 pr-2 border-r border-slate-100">Limpar</button>}
-                <button type="submit" className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">Pesquisar</button>
-              </div>
-            </form>
+            <div className="flex flex-col gap-4">
+              <form onSubmit={handleSearch} className="relative group">
+                <input 
+                  type="text" 
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="PROCURAR POR CNPJ, ÓRGÃO OU OBJETO..." 
+                  className="w-full bg-white border-2 border-slate-100 rounded-2xl py-5 pl-14 pr-6 shadow-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-300 text-sm font-medium tracking-tight"
+                />
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
+                      showFilters ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    )}
+                  >
+                    <Filter className="w-3.5 h-3.5" />
+                    Filtros
+                  </button>
+                  {search && <button type="button" onClick={() => {setSearch(''); setPage(1);}} className="text-[10px] font-bold uppercase text-slate-400 hover:text-slate-900 pr-2 border-r border-slate-100">Limpar</button>}
+                  <button type="submit" className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-slate-800 transition-all">Pesquisar</button>
+                </div>
+              </form>
+
+              {/* Advanced Filter Panel */}
+              {showFilters && (
+                <div className="bg-white border-2 border-blue-100 rounded-3xl p-8 shadow-xl shadow-blue-500/5 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">CNPJ do Fornecedor / Órgão</label>
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        value={advancedFilters.cnpj}
+                        onChange={(e) => setAdvancedFilters(prev => ({...prev, cnpj: e.target.value}))}
+                        placeholder="00.000.000/0000-00"
+                        className="w-full bg-slate-50 border-2 border-slate-50 rounded-xl py-3 px-4 text-sm font-bold focus:bg-white focus:border-blue-500 transition-all outline-none"
+                      />
+                      <Building2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Código CATMAT / Material</label>
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        value={advancedFilters.catmat}
+                        onChange={(e) => setAdvancedFilters(prev => ({...prev, catmat: e.target.value}))}
+                        placeholder="Ex: Alimentos, Software..."
+                        className="w-full bg-slate-50 border-2 border-slate-50 rounded-xl py-3 px-4 text-sm font-bold focus:bg-white focus:border-blue-500 transition-all outline-none"
+                      />
+                      <FileText className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Localização (UF)</label>
+                    <div className="relative">
+                      <select 
+                        value={advancedFilters.uf}
+                        onChange={(e) => setAdvancedFilters(prev => ({...prev, uf: e.target.value}))}
+                        className="w-full bg-slate-50 border-2 border-slate-50 rounded-xl py-3 px-4 text-sm font-bold focus:bg-white focus:border-blue-500 transition-all outline-none appearance-none cursor-pointer"
+                      >
+                        <option value="">Brasil (Todos)</option>
+                        {["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"].map(state => (
+                          <option key={state} value={state}>{state}</option>
+                        ))}
+                      </select>
+                      <MapPin className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-3 pt-2 border-t border-slate-50 flex items-center justify-end">
+                     <button 
+                       type="button"
+                       onClick={() => {
+                         setAdvancedFilters({ cnpj: '', catmat: '', uf: '', esfera: '', modalidade: '' });
+                         setSearch('');
+                       }}
+                       className="text-[10px] font-black uppercase text-slate-400 hover:text-red-500 transition-colors"
+                     >
+                       Limpar Todos os Filtros
+                     </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="lg:col-span-3 grid grid-cols-1 gap-4">

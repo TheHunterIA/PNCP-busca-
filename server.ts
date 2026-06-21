@@ -6,10 +6,10 @@ import { executarSincronizacao, obterStatusSincronismo, obterTotalRegistrosFires
 import { db } from "./lib/firebase";
 import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+const app = express();
+const PORT = 3000;
 
+async function startServer() {
   app.use(express.json());
 
   // CORS Headers
@@ -31,6 +31,10 @@ async function startServer() {
         termo,
         uf,
         modalidade,
+        esfera,
+        situacao,
+        catmat,
+        cnpj,
         pagina = "1",
         limite = "10"
       } = req.query;
@@ -39,6 +43,10 @@ async function startServer() {
         q: (q as string) || (termo as string),
         uf: uf as string,
         modalidade: modalidade as string,
+        esfera: esfera as string,
+        situacao: situacao as string,
+        catmat: catmat as string,
+        cnpj: cnpj as string,
         pagina: parseInt(pagina as string, 10) || 1,
         limite: parseInt(limite as string, 10) || 10
       });
@@ -167,31 +175,36 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[PNCP Modern Server] Backend rodando na porta ${PORT}`);
-    
-    // Boot Sync Trigger
-    const triggerInitialSync = async () => {
-      console.log("[Boot Trigger] Verificando carga inicial...");
-      try {
-        const stats = await obterStatusSincronismo();
-        // Só faz sync inicial se nunca foi feito ou se o banco parece vazio
-        if (!stats.lastSyncTime) {
-          const startOfYear = "20250101";
-          const today = new Date();
-          const formatDate = (d: Date) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
-          const endDate = formatDate(today);
+  // Apenas inicia o listen se não estiver no Vercel (que gerencia o app por import/export)
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`[PNCP Modern Server] Backend rodando na porta ${PORT}`);
+      
+      // Boot Sync Trigger
+      const triggerInitialSync = async () => {
+        console.log("[Boot Trigger] Verificando carga inicial...");
+        try {
+          const stats = await obterStatusSincronismo();
+          if (!stats.lastSyncTime) {
+            const startOfYear = "20250101";
+            const today = new Date();
+            const formatDate = (d: Date) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+            const endDate = formatDate(today);
 
-          executarSincronizacao(startOfYear, endDate, 1)
-            .then(s => console.log(`[Boot Trigger] Sync inicial concluído: ${s.savedCount} regs.`))
-            .catch(e => console.error("[Boot Trigger] Erro no sync inicial:", e));
-        }
-      } catch (e) {}
-    };
+            executarSincronizacao(startOfYear, endDate, 2)
+              .then(s => console.log(`[Boot Trigger] Sync inicial concluído: ${s.savedCount} regs.`))
+              .catch(e => console.error("[Boot Trigger] Erro no sync inicial:", e));
+          }
+        } catch (e) {}
+      };
 
-    triggerInitialSync();
-  });
+      triggerInitialSync();
+    });
+  }
 }
 
 startServer();
+
+export default app;
+
 

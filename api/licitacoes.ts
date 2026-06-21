@@ -15,8 +15,10 @@ export async function buscarLicitacoesDoFirestore(params: {
   modalidade?: string;
   esfera?: string;
   situacao?: string;
+  catmat?: string;
+  cnpj?: string;
 } = {}): Promise<ApiResponse & { databaseEmpty?: boolean; items: LicitacaoPNCP[] }> {
-  const { pagina = 1, limite = 10, q, uf, modalidade, esfera, situacao } = params;
+  const { pagina = 1, limite = 10, q, uf, modalidade, esfera, situacao, catmat, cnpj } = params;
   try {
     const colRef = collection(db, "licitacoes");
     const snap = await getDocs(colRef);
@@ -44,6 +46,23 @@ export async function buscarLicitacoesDoFirestore(params: {
 
     // 1. Filtragem Interativa e Inteligente em Memória
     let filteredRecords = [...records];
+
+    // Filtro Alpha: CNPJ Direto (Filtro Rápido)
+    if (cnpj) {
+      const searchCnpj = cnpj.replace(/[^\d]/g, "");
+      filteredRecords = filteredRecords.filter(item => 
+        (item.orgaoEntidade?.cnpj || "").replace(/[^\d]/g, "").includes(searchCnpj)
+      );
+    }
+
+    // Filtro Beta: CATMAT (Simulado ou Real se mapeado nos itens)
+    // Nota: Por enquanto o robô PNCP salva o objeto. Vou adicionar busca parcial no objeto se CATMAT for passado
+    if (catmat) {
+      const searchCatmat = catmat.toLowerCase();
+      filteredRecords = filteredRecords.filter(item => 
+        (item.objeto || "").toLowerCase().includes(searchCatmat)
+      );
+    }
 
     // Filtro 1: Termo de Busca (Objeto ou Razão Social do Órgão)
     const termo = q;

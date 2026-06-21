@@ -1,6 +1,6 @@
 {
   "name": "PNCP Warehouse Explorer",
-  "description": "Explorador de licitações do PNCP com ingestão incremental via robô e persistência no Firebase Firestore.",
+  "description": "Explorador de licitações do PNCP com busca avançada (CNPJ, CATMAT, UF), ingestão incremental via robô e persistência no Firebase Firestore.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
