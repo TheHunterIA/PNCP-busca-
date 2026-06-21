@@ -8,7 +8,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   build: {
-    outDir: 'dist/client',
+    outDir: 'dist',
   },
   server: {
     port: 3000,
